@@ -1,0 +1,19 @@
+definition_version: 2
+entities:
+  ecom_dashboard:
+    type: streamlit
+    identifier:
+      name: ECOM_DASHBOARD
+      database: ECOM_ANALYTICS
+      schema: PUBLIC
+    query_warehouse: ECOM_WH
+    runtime_name: SYSTEM$ST_CONTAINER_RUNTIME_PY3_11
+    compute_pool: SYSTEM_COMPUTE_POOL_CPU
+    main_file: streamlit_app.py
+    artifacts:
+      - streamlit_app.py
+      - pyproject.toml
+      - app_pages/revenue_overview.py
+      - app_pages/customer_insights.py
+      - app_pages/product_performance.py
+      - app_pages/customer_ltv.py

@@ -1,0 +1,38 @@
+-- ============================================================
+-- Simulate new data: stage CSVs, COPY INTO raw tables,
+-- then verify the streams captured the changes
+-- ============================================================
+
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE ECOM_WH;
+USE DATABASE ECOM_ANALYTICS;
+
+-- 1. Create an internal stage for test data
+CREATE STAGE IF NOT EXISTS ECOM_ANALYTICS.RAW.TEST_DATA_STAGE
+  FILE_FORMAT = (TYPE = CSV FIELD_OPTIONALLY_ENCLOSED_BY = '"' SKIP_HEADER = 1)
+  ENCRYPTION  = (TYPE = 'SNOWFLAKE_SSE');
+
+-- 2. Upload CSV files to the stage
+--    Run from Snowflake CLI or SnowSQL:
+--
+--    PUT 'file:///path/to/test_data/test_orders.csv'      @ECOM_ANALYTICS.RAW.TEST_DATA_STAGE/orders      AUTO_COMPRESS=TRUE OVERWRITE=TRUE;
+--    PUT 'file:///path/to/test_data/test_order_items.csv'  @ECOM_ANALYTICS.RAW.TEST_DATA_STAGE/order_items  AUTO_COMPRESS=TRUE OVERWRITE=TRUE;
+
+-- 3. Load orders into RAW_ORDERS (skip _LOADED_AT; it defaults to CURRENT_TIMESTAMP)
+COPY INTO ECOM_ANALYTICS.RAW.RAW_ORDERS (ORDER_ID, CUSTOMER_ID, ORDER_DATE, STATUS, TOTAL_AMOUNT)
+  FROM @ECOM_ANALYTICS.RAW.TEST_DATA_STAGE/orders
+  FILE_FORMAT = (TYPE = CSV FIELD_OPTIONALLY_ENCLOSED_BY = '"' SKIP_HEADER = 1)
+  ON_ERROR = ABORT_STATEMENT;
+
+-- 4. Load order items into RAW_ORDER_ITEMS
+COPY INTO ECOM_ANALYTICS.RAW.RAW_ORDER_ITEMS (ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE)
+  FROM @ECOM_ANALYTICS.RAW.TEST_DATA_STAGE/order_items
+  FILE_FORMAT = (TYPE = CSV FIELD_OPTIONALLY_ENCLOSED_BY = '"' SKIP_HEADER = 1)
+  ON_ERROR = ABORT_STATEMENT;
+
+-- 5. Verify streams captured the new data
+SELECT 'RAW_ORDERS_STREAM' AS STREAM, COUNT(*) AS NEW_ROWS
+  FROM ECOM_ANALYTICS.RAW.RAW_ORDERS_STREAM
+UNION ALL
+SELECT 'RAW_ORDER_ITEMS_STREAM', COUNT(*)
+  FROM ECOM_ANALYTICS.RAW.RAW_ORDER_ITEMS_STREAM;

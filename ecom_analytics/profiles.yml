@@ -1,0 +1,12 @@
+ecom_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: EKJGUYM-FL96854
+      user: NARESHKOLA
+      role: ACCOUNTADMIN
+      database: ECOM_ANALYTICS
+      warehouse: ECOM_WH
+      schema: STAGING
+      threads: 4
